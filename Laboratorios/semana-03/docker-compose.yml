@@ -1,0 +1,97 @@
+name: data-ml-infra
+services:
+
+  kestra-db:
+    image: postgres:17-alpine
+
+    environment:
+     - POSTGRES_USER=kestra
+     - POSTGRES_PASSWORD=kestra
+     - POSTGRES_DB=kestra
+
+    volumes:
+      - kestra-db-data:/var/lib/postgresql/data
+
+  data-warehouse:
+    image: postgres:17
+
+    environment:
+     - POSTGRES_USER=admin
+     - POSTGRES_PASSWORD=admin
+     - POSTGRES_DB=proyecto
+
+    ports: 
+      - 5433:5432
+    
+    volumes:
+      - warehouse-data:/var/lib/postgresql/data
+    
+  warehouse-ui:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+    ports:
+      - 5050:80
+    depends_on:
+      - data-warehouse
+    volumes:
+      - warehouse-ui-data:/var/lib/pgadmin
+  
+  kestra:
+    image: kestra/kestra:v1.3.37
+    user: "root"
+    command: ["server", "standalone"]
+
+    ports:
+      - "8080:8080"
+    environment:
+      ENV_WAREHOUSE_HOST: data-warehouse
+      ENV_WAREHOUSE_DB: ${WAREHOUSE_DB}
+      ENV_WAREHOUSE_USER: ${WAREHOUSE_USER}
+      ENV_WAREHOUSE_PASSWORD: ${WAREHOUSE_PASSWORD}
+      
+      KESTRA_CONFIGURATION: |
+        datasources:
+          postgres:
+            url: jdbc:postgresql://kestra-db:5432/kestra
+            driver-class-name: org.postgresql.Driver
+            username: kestra
+            password: kestra
+
+        kestra:
+          server:
+            basic-auth:
+              enabled: false
+
+          repository:
+            type: postgres
+
+          queue:
+            type:postgres
+
+          storage: 
+            type: local
+            local:
+              base-path: /app/storage
+
+          tasks: 
+            tmp-dir: 
+              path: /tmp/kestra-wd/tmp
+
+          url: http://localhost:8080
+
+
+
+    volumes:
+      - kestra-storage:/app/storage
+
+    depends_on:
+      - kestra-db
+
+
+volumes: 
+  warehouse-data:
+  warehouse-ui-data:
+  kestra-storage:  
+  kestra-db-data:
