@@ -68,7 +68,7 @@ services:
             type: postgres
 
           queue:
-            type:postgres
+            type: postgres
 
           storage: 
             type: local
