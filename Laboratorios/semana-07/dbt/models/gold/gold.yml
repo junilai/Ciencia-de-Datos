@@ -1,0 +1,90 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: Calendario diario 2025-01-01 → 2026-12-31 (role-playing pickup/dropoff).
+    columns:
+      - name: date_key
+        description: PK, YYYYMMDD.
+        data_tests: [unique, not_null]
+
+  - name: dim_time
+    description: Hora del día (0–23) con franja y hora pico.
+    columns:
+      - name: hour_key
+        description: PK, 0–23.
+        data_tests: [unique, not_null]
+
+  - name: dim_location
+    description: Zonas TLC (role-playing pickup/dropoff). 264/265 = Unknown / fuera de NYC.
+    columns:
+      - name: location_id
+        description: PK, LocationID TLC.
+        data_tests: [unique, not_null]
+
+  - name: dim_vendor
+    columns:
+      - name: vendor_id
+        description: PK; -1 = Unknown.
+        data_tests: [unique, not_null]
+
+  - name: dim_payment_type
+    columns:
+      - name: payment_type_id
+        description: PK; 5 = Unknown.
+        data_tests: [unique, not_null]
+
+  - name: dim_rate_code
+    columns:
+      - name: rate_code_id
+        description: PK; 99 = Unknown.
+        data_tests: [unique, not_null]
+
+  - name: fct_trips
+    description: Hechos de viajes. Grano = un viaje válido.
+    columns:
+      - name: trip_id
+        description: PK.
+        data_tests: [unique, not_null]
+      - name: pickup_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_date'), field: date_key}
+      - name: dropoff_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_date'), field: date_key}
+      - name: pickup_hour_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_time'), field: hour_key}
+      - name: pickup_location_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_location'), field: location_id}
+      - name: dropoff_location_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_location'), field: location_id}
+      - name: vendor_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_vendor'), field: vendor_id}
+      - name: payment_type_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_payment_type'), field: payment_type_id}
+      - name: rate_code_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_rate_code'), field: rate_code_id}
+      - name: total_amount
+        data_tests: [not_null]

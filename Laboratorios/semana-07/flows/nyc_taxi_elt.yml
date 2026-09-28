@@ -35,3 +35,12 @@ tasks:
           type: io.kestra.plugin.core.runner.Process
         commands:
           - /opt/pipeline-venv/bin/python /pipeline/ingestion/load_month.py {{ taskrun.value }}
+
+  - id: dbt_build
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - cd /pipeline/dbt
+      - /opt/pipeline-venv/bin/dbt deps
+      - /opt/pipeline-venv/bin/dbt build
