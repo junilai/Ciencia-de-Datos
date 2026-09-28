@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: silver_trips_evaluated
+    description: Base intermedia con estandarización, trip_id, rejection_reason y dup_rank.
+
+  - name: silver_trips
+    description: >
+      Viajes limpios. Reglas: snake_case y tipos consistentes; rate_code_id nulo → 99 (Unknown);
+      recargos nulos → 0 (no aplicó); passenger_count nulo se conserva para no sesgar promedios;
+      deduplicación por trip_id; se excluyen timestamps nulos, zonas fuera de 1–265, pickup fuera
+      del mes del archivo, duración ≤ 0 o > 24 h, distancia < 0 o > 500 mi y total_amount < 0.
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "dropoff_at > pickup_at"
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "total_amount >= 0"
+    columns:
+      - name: trip_id
+        description: md5(vendor, pickup, dropoff, zonas, fare, total, período). La fuente no trae ID.
+        data_tests: [unique, not_null]
+      - name: pickup_at
+        data_tests: [not_null]
+      - name: dropoff_at
+        data_tests: [not_null]
+      - name: total_amount
+        data_tests: [not_null]
+      - name: rate_code_id
+        data_tests: [not_null]
+
+  - name: silver_trips_rejected
+    description: Registros excluidos de silver_trips con su motivo.
+    columns:
+      - name: rejection_reason
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["missing_timestamp", "invalid_location", "pickup_out_of_period",
+                         "non_positive_duration", "duration_over_24h", "invalid_distance",
+                         "negative_or_missing_amount"]

@@ -1,0 +1,35 @@
+version: 2
+
+seeds:
+  - name: taxi_zone_lookup
+    description: Zonas oficiales de taxi de NYC (TLC).
+    config:
+      column_types:
+        LocationID: integer
+    columns:
+      - name: LocationID
+        data_tests: [unique, not_null]
+  - name: vendor
+    description: Proveedores TPEP según el diccionario de datos TLC; -1 = Unknown.
+    config:
+      column_types:
+        vendor_id: integer
+    columns:
+      - name: vendor_id
+        data_tests: [unique, not_null]
+  - name: payment_type
+    description: Tipos de pago TLC; 0 = Flex Fare, 5 = Unknown.
+    config:
+      column_types:
+        payment_type_id: integer
+    columns:
+      - name: payment_type_id
+        data_tests: [unique, not_null]
+  - name: rate_code
+    description: Códigos de tarifa TLC; 99 = Unknown.
+    config:
+      column_types:
+        rate_code_id: integer
+    columns:
+      - name: rate_code_id
+        data_tests: [unique, not_null]

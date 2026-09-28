@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: raw
+    database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
+    schema: RAW
+    tables:
+      - name: yellow_tripdata
+        description: Carga 1:1 de los parquet TLC con metadata de origen (load_month.py).
