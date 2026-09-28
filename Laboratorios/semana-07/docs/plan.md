@@ -1688,3 +1688,12 @@ git push
 ```
 
 En GitHub: abrir `Laboratorios/semana-07/` → el README se renderiza y los diagramas Mermaid en `docs/` se muestran como gráficos. Clonar el repo en una carpeta temporal y seguir el README hasta `docker compose up` sin tener que consultar nada fuera del README.
+
+---
+
+## Cambios durante la ejecución
+
+- **F2 — build:** `docker compose build` debe usar el builder local (`BUILDX_BUILDER=desktop-linux`); el builder `multiarch` (docker-container) no ve la imagen base ya descargada y re-descarga ~3 GB.
+- **F2 — autenticación:** en Kestra 1.x `basic-auth.enabled: false` no desactiva el login. Se configuran `basic-auth.username/password` desde `.env` (`KESTRA_USER`, `KESTRA_PASSWORD`); la API se llama con `curl -u`.
+- **F2 — carga de flows:** `--flow-path` valida los flows antes de que terminen de registrarse los plugins externos (`Invalid type: io.kestra.plugin.scripts.shell.Commands`) y el watcher de `micronaut.io.watch` falla con `tenantId`. Se reemplazan por `infra/deploy_flows.sh` (import vía `POST /api/v1/main/flows/import`), ejecutado por el servicio one-shot `flow-deployer` en cada `docker compose up`. Tras editar un flow: `./infra/deploy_flows.sh` (en vez de `docker compose restart kestra`).
+- **F2 — env en runner Process:** confirmado que hereda las variables del contenedor; no hace falta el fallback `ENV_`.

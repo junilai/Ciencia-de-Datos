@@ -1,0 +1,86 @@
+name: nyc-taxi-elt
+
+services:
+  kestra-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: kestra
+      POSTGRES_PASSWORD: kestra
+      POSTGRES_DB: kestra
+    volumes:
+      - kestra-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kestra -d kestra"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  kestra:
+    build:
+      context: .
+      dockerfile: infra/kestra.Dockerfile
+    image: nyc-taxi-kestra:1.3.37
+    user: "root"
+    command: ["server", "standalone", "--no-tutorials"]
+    ports:
+      - "8080:8080"
+    environment:
+      SNOWFLAKE_ACCOUNT: ${SNOWFLAKE_ACCOUNT}
+      SNOWFLAKE_USER: ${SNOWFLAKE_USER}
+      SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE}
+      SNOWFLAKE_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE}
+      SNOWFLAKE_DATABASE: ${SNOWFLAKE_DATABASE}
+      SNOWFLAKE_PRIVATE_KEY_PATH: /pipeline/.secrets/rsa_key.p8
+      DBT_PROFILES_DIR: /pipeline/dbt
+      KESTRA_CONFIGURATION: |
+        datasources:
+          postgres:
+            url: jdbc:postgresql://kestra-db:5432/kestra
+            driver-class-name: org.postgresql.Driver
+            username: kestra
+            password: kestra
+        kestra:
+          server:
+            basic-auth:
+              username: ${KESTRA_USER}
+              password: ${KESTRA_PASSWORD}
+          repository:
+            type: postgres
+          queue:
+            type: postgres
+          storage:
+            type: local
+            local:
+              base-path: /app/storage
+          tasks:
+            tmp-dir:
+              path: /tmp/kestra-wd/tmp
+          url: http://localhost:8080
+    volumes:
+      - kestra-storage:/app/storage
+      - ./ingestion:/pipeline/ingestion:ro
+      - ./dbt:/pipeline/dbt
+      - ./.secrets:/pipeline/.secrets:ro
+    depends_on:
+      kestra-db:
+        condition: service_healthy
+
+  # Publica los flows de ./flows en Kestra cuando está listo (one-shot).
+  flow-deployer:
+    image: nyc-taxi-kestra:1.3.37
+    entrypoint: ["/bin/sh", "/pipeline/infra/deploy_flows.sh"]
+    environment:
+      KESTRA_URL: http://kestra:8080
+      KESTRA_USER: ${KESTRA_USER}
+      KESTRA_PASSWORD: ${KESTRA_PASSWORD}
+      FLOWS_DIR: /pipeline/flows
+    volumes:
+      - ./flows:/pipeline/flows:ro
+      - ./infra:/pipeline/infra:ro
+    depends_on:
+      - kestra
+    restart: "no"
+
+volumes:
+  kestra-db-data:
+  kestra-storage:

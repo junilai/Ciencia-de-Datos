@@ -1,0 +1,14 @@
+id: smoke
+namespace: usfq.nyc_taxi
+description: Verifica el runtime del pipeline dentro de Kestra.
+
+tasks:
+  - id: check_runtime
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - /opt/pipeline-venv/bin/python --version
+      - /opt/pipeline-venv/bin/dbt --version
+      - test -n "$SNOWFLAKE_ACCOUNT" && echo "SNOWFLAKE_ACCOUNT presente"
+      - test -r "$SNOWFLAKE_PRIVATE_KEY_PATH" && echo "llave legible"
