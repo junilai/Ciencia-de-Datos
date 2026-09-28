@@ -1,0 +1,10 @@
+.env
+.secrets/
+.venv/
+__pycache__/
+.pytest_cache/
+*.parquet
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+logs/
